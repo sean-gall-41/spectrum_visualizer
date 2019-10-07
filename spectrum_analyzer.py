@@ -1,13 +1,23 @@
-import PySimpleGUI as gui
+import pyaudio 
+import wave
+import sys #so we can utilize argv
 
-layout = [[gui.Button('Start')],[gui.Exit()]]
+if len(sys.argv) < 2:
+    print("Plays an audio file. \n\nUsage: python %s filename.[file_extension]"
+        % sys.argv[0])
+    sys.exit(-1)
 
-window = gui.Window('spectrum analyzer', layout)
+sound_file = wave.open(sys.argv[1], 'r')
+# import PySimpleGUI as gui
 
-while True:
-    event, values = window.Read()
-    print(event, values)
-    if event in (None, 'Exit'):
-        break
+# layout = [[gui.Button('Start')],[gui.Exit()]]
 
-window.close()
+# window = gui.Window('spectrum analyzer', layout)
+
+# while True:
+#     event, values = window.Read()
+#     print(event, values)
+#     if event in (None, 'Exit'):
+#         break
+
+# window.close()
