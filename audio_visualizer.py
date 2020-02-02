@@ -9,7 +9,6 @@ from scipy.fftpack import fft
 from scipy.fftpack import fftfreq
 import math
 import struct
-import matplotlib.pyplot
 
 
 def generate_sin_wave_file(freq=440., amp=2.**16, frate=22050,
@@ -72,7 +71,7 @@ class Plot2D(object):
             self.t_data = self.t_data / self.wf.getframerate()
             # scale t data to ms
             self.t_data = 1000 * self.t_data
-            # find number of unique points so freq graph doesn't alias
+            # find number of unique points to cut off graph at nyquist freq
             self.n_unique_pts = int(math.ceil((self.CHUNK+1) / 2.))
             # obtain f data in Hz
             self.f_data = np.arange(0, self.n_unique_pts, 1.) * \
@@ -84,9 +83,12 @@ class Plot2D(object):
             QtGui.QApplication.instance().exec_()
 
     # TODO: bugfix: getting divide by zero errors in log modes
-    def set_plotdata(self, name, dataset_x, dataset_y):
+    def set_plotdata(self, name, dataset_x, dataset_y, hist=False):
+        # If plot 'name' is initialized, set data
         if name in self.traces:
             self.traces[name].setData(dataset_x, dataset_y)
+        # If plot 'name' is not initialized, add it to our traces dict and
+        # set up that plot item.
         else:
             if name == 'raw_waveform':
                 self.traces[name] = self.raw_waveform.plot(pen='b', width=3)
@@ -97,14 +99,19 @@ class Plot2D(object):
                                             padding=0.005)
 
             if name == 'spectrum':
-                self.traces[name] = self.spectrum.plot(pen='b', width=3)
-                self.spectrum.setXRange(20, self.wf.getframerate() / 2)
+                if hist:
+                    self.traces[name] = self.spectrum.plot(np.ones(2), np.ones(1), stepMode=True, brush=(0,0,255,150))
+                else:
+                    self.traces[name] = self.spectrum.plot(pen='b', width=3)
+                self.spectrum.setXRange(0, self.wf.getframerate() / 2)
+                np.seterr(divide='ignore')
                 self.spectrum.setLogMode(x=True, y=False)
                 # TODO: not reaching maximum value? --> max value slightly off
                 # self.spectrum.setYRange(0., 1., padding=0)
                 # self.spectrum.setXRange(np.log10(20), 0, padding=0.005)
 
     def update(self):
+        # read data one chunk at a time, write each chunk to output stream
         self.raw_wav_data = self.wf.readframes(self.CHUNK)
         self.sstream.write(self.raw_wav_data)
 
@@ -116,20 +123,20 @@ class Plot2D(object):
 
         # Normalize wave data to lie within range (-1, 1)
         self.wav_data = self.wav_data / 2.**15
-        # TODO: Check formula for freq amplitude normalization
+        # take fft, find magn of result, and select (negative?) freq components
         self.amp_data = np.abs(fft(self.wav_data)[0:self.n_unique_pts])
-        self.amp_data = (2 / self.CHUNK) * self.amp_data
-        self.bin_data, self.bins = np.histogram(self.amp_data,
-                                                bins=np.linspace(0,
-                                                                 self.n_unique_pts, 64))
-        matplotlib.pyplot.hist(self.bin_data, bins=self.bins)
-        matplotlib.pyplot.show()
+        # 'Normalization' and intensity correction for taking half total signal
+        self.amp_data = (2. / self.CHUNK) * self.amp_data
+
+        # conversion to decibels I suppose and some data cleaning
+        # self.amp_data = 20 * np.log10(self.amp_data)
+        # self.amp_data[np.isinf(self.amp_data)] = 0
+        
+        # TODO: plot histogram data in spectrum plot item
         # testing: code to calculate frequency of sine wave input
         # freqs = fftfreq(len(self.amp_data))
         # max_freq = freqs[np.argmax(np.abs(self.amp_data))]
         # freq_Hz = abs(max_freq * self.wf.getframerate())
-        # print(freq_Hz)
-        # print(self.f_data[np.argmax(self.amp_data)])
         # with 440 signal, getting about 431...pretty close but why off?
 
         self.set_plotdata(name='raw_waveform', dataset_x=self.t_data,
