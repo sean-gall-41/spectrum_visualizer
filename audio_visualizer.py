@@ -82,7 +82,6 @@ class Plot2D(object):
         if (sys.flags.interactive != 1) or not hasattr(QtCore, 'PYQT_VERSION'):
             QtGui.QApplication.instance().exec_()
 
-    # TODO: bugfix: getting divide by zero errors in log modes
     def set_plotdata(self, name, dataset_x, dataset_y, hist=False):
         # If plot 'name' is initialized, set data
         if name in self.traces:
@@ -100,7 +99,11 @@ class Plot2D(object):
 
             if name == 'spectrum':
                 if hist:
-                    self.traces[name] = self.spectrum.plot(np.ones(2), np.ones(1), stepMode=True, brush=(0,0,255,150))
+                    self.traces[name] = self.spectrum.plot(np.ones(2),
+                                                           np.ones(1),
+                                                           stepMode=True,
+                                                           brush=(0, 0, 255,
+                                                                  150))
                 else:
                     self.traces[name] = self.spectrum.plot(pen='b', width=3)
                 self.spectrum.setXRange(0, self.wf.getframerate() / 2)
@@ -129,9 +132,10 @@ class Plot2D(object):
         self.amp_data = (2. / self.CHUNK) * self.amp_data
 
         # conversion to decibels I suppose and some data cleaning
+        # np.seterr(divide='ignore')
         # self.amp_data = 20 * np.log10(self.amp_data)
         # self.amp_data[np.isinf(self.amp_data)] = 0
-        
+
         # TODO: plot histogram data in spectrum plot item
         # testing: code to calculate frequency of sine wave input
         # freqs = fftfreq(len(self.amp_data))
