@@ -12,17 +12,15 @@ import math
 import struct
 
 
-def generate_sin_wave_file(freq=440., amp=2.**16, frate=22050,
-                           data_points=44100, nchannels=1, sampwidth=2,
-                           comptype="NONE", compname="not compressed"):
+def generate_sin_wave_file(freq=440., amp=2.**16, duration=1., frate=22050,
+                           nchannels=1, sampwidth=2, comptype="NONE",
+                           compname="not compressed"):
 
-    duration = data_points / frate
+    data_points = int(duration * frate)
     fname = 'Sine_{f}Hz_{a}Amp_{s}s.wav'.format(f=freq, a=amp, s=duration)
 
     # Check if file already exists. Saves some time if it already does
-    if os.path.isfile(fname):
-        return fname
-    else:
+    if not os.path.isfile(fname):
         data = [math.sin(2 * math.pi * freq * (x / frate))
                 for x in range(data_points)]
         wav_file = wave.open(fname, 'wb')
@@ -31,7 +29,7 @@ def generate_sin_wave_file(freq=440., amp=2.**16, frate=22050,
         for v in data:
             wav_file.writeframes(struct.pack('h', int(v * amp / 2)))
         wav_file.close()
-        return fname
+    return fname
 
 
 class Plot2D(object):
@@ -121,21 +119,41 @@ class Plot2D(object):
         self.p.terminate()
 
 
+# TODO: Clean up this code. reimplement arg parser and error checking
+# if you want to go the extra mile: do some unit tests on input
 if __name__ == '__main__':
-    try:
-        filename = sys.argv[1]
+    parser = argparse.ArgumentParser(description="Displays a visualization "
+                                     "of the spectrum of a generated signal "
+                                     "or a specified file.")
 
-    # Checks whether any filename was entered: if not, assume user wants to
-    # generate a sine wave
-    except IndexError:
-        # TODO: prompt user if they want different values than default
-        filename = generate_sin_wave_file()
+    parser.add_argument("-f", "--file", help="include file to be analyzed and "
+                        "played. Accepted formats are: *.wav")
 
+    subparsers = parser.add_subparsers()
+
+    generateparser = subparsers.add_parser("generate", help="command to "
+                                           "generate a sine wave")
+    generateparser.add_argument("-fr", "--frequency", type=float, default=440.,
+                                help="frequency (in Hz) of generated sine "
+                                "wave")
+    generateparser.add_argument("-d", "--duration", type=float, default=1.,
+                                help="duration (in seconds) of the generated "
+                                "sine wave")
+    args = parser.parse_args()
+
+    if args.file is not None:
+        filename = args.file
+        if os.path.isfile(filename):
+            if not filename.endswith('.wav'):
+                print('invalid file format. Exiting...')
+                sys.exit(1)
+        else:
+            print("file not recognized. Exiting...")
+            sys.exit(2)
     else:
-        # Checks whether filename has correct extension
-        if not filename.endswith('.wav'):
-            print('invalid file format. Exiting...')
-            sys.exit(1)
+        print("generate the wave")
+        filename = generate_sin_wave_file(freq=args.frequency,
+                                          duration=args.duration)
 
     plt = Plot2D(filename)
     plt.animation()
