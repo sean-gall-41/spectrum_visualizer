@@ -120,8 +120,6 @@ class Plot2D(object):
         self.p.terminate()
 
 
-# TODO: Clean up this code. reimplement arg parser and error checking
-# if you want to go the extra mile: do some unit tests on input
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Displays a visualization "
                                      "of the spectrum of a generated signal "
