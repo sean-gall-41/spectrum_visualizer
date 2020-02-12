@@ -8,6 +8,7 @@ import pyqtgraph as pg
 from scipy.fftpack import fft
 from scipy.fftpack import fftfreq
 import argparse
+from argparse import RawTextHelpFormatter
 import math
 import struct
 
@@ -124,21 +125,21 @@ class Plot2D(object):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Displays a visualization "
                                      "of the spectrum of a generated signal "
-                                     "or a specified file.")
+                                     "or a specified file. If no options are "
+                                     "are specified, defaults to generating "
+                                     "a sine wave of frequency 440Hz and "
+                                     "duration 1s.\n\nIf FILE is specified "
+                                     "all other input is ignored.",
+                                     formatter_class=RawTextHelpFormatter)
 
     parser.add_argument("-f", "--file", help="include file to be analyzed and "
                         "played. Accepted formats are: *.wav")
 
-    subparsers = parser.add_subparsers()
-
-    generateparser = subparsers.add_parser("generate", help="command to "
-                                           "generate a sine wave")
-    generateparser.add_argument("-fr", "--frequency", type=float, default=440.,
-                                help="frequency (in Hz) of generated sine "
-                                "wave")
-    generateparser.add_argument("-d", "--duration", type=float, default=1.,
-                                help="duration (in seconds) of the generated "
-                                "sine wave")
+    parser.add_argument("-fr", "--frequency", type=float, default=440.,
+                        help="frequency (in Hz) of generated sine wave")
+    parser.add_argument("-d", "--duration", type=float, default=1.,
+                        help="duration (in seconds) of the generated sine "
+                        "wave")
     args = parser.parse_args()
 
     if args.file is not None:
@@ -151,7 +152,6 @@ if __name__ == '__main__':
             print("file not recognized. Exiting...")
             sys.exit(2)
     else:
-        print("generate the wave")
         filename = generate_sin_wave_file(freq=args.frequency,
                                           duration=args.duration)
 
